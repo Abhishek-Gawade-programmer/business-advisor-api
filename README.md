@@ -142,15 +142,22 @@ async def process_challenge_with_crew(challenge: str) -> List[Dict[str, Any]]:
         verbose=True,
     )
 
-    crew_results_financial = await advisor_crew_financial.kickoff_async()
-    crew_results_market = await advisor_crew_market.kickoff_async()
-    crew_results_business_model = await advisor_crew_business_model.kickoff_async()
+    crew_results_financial = advisor_crew_financial.kickoff_async()
+    crew_results_market = advisor_crew_market.kickoff_async()
+    crew_results_business_model = advisor_crew_business_model.kickoff_async()
 
-    crew_results = [
-        crew_results_financial,
-        crew_results_market,
-        crew_results_business_model,
-    ]
+
+    # Create tasks for parallel execution
+    financial_task_future = advisor_crew_financial.kickoff_async()
+    market_task_future = advisor_crew_market.kickoff_async()
+    business_model_task_future = advisor_crew_business_model.kickoff_async()
+
+    # Wait for all tasks to complete in parallel
+    crew_results = await asyncio.gather(
+        financial_task_future,
+        market_task_future,
+        business_model_task_future,
+    )
 
     # Process results to extract scores and format responses
 ```
