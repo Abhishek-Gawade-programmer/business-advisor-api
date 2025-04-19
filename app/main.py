@@ -1,57 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import uvicorn
-import asyncio
-from typing import List, Dict, Any
 from advisor_crew import process_challenge_with_crew
+from app.schemas import ChallengeRequest, ChallengeResponse
+
 
 app = FastAPI(
     title="Business Advisor API",
     description="A FastAPI application that simulates a business advisor loop using crewAI",
     version="0.1.0",
 )
-
-
-class ChallengeRequest(BaseModel):
-    challenge: str
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "challenge": "How can we increase our market share in the renewable energy sector?"
-            }
-        }
-
-
-class AdvisorScore(BaseModel):
-    capital: float
-    market: float
-    model: float
-
-
-class AdvisorResponse(BaseModel):
-    advisor_id: str
-    response: str
-    scores: AdvisorScore
-
-
-class ChallengeResponse(BaseModel):
-    challenge: str
-    advisor_responses: List[AdvisorResponse]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "challenge": "How can we increase our market share in the renewable energy sector?",
-                "advisor_responses": [
-                    {
-                        "advisor_id": "financial_expert",
-                        "response": "You should consider allocating resources to R&D...",
-                        "scores": {"capital": 7.5, "market": 8.2, "model": 6.9},
-                    }
-                ],
-            }
-        }
 
 
 @app.post("/api/challenge", response_model=ChallengeResponse)
@@ -64,17 +22,12 @@ async def api_process_challenge(request: ChallengeRequest):
     if not request.challenge or len(request.challenge.strip()) == 0:
         raise HTTPException(status_code=400, detail="Challenge text cannot be empty")
 
-    # Process challenge using crewAI
-    try:
-        advisor_responses = await process_challenge_with_crew(request.challenge)
+    advisor_responses = await process_challenge_with_crew(request.challenge)
 
-        return ChallengeResponse(
-            challenge=request.challenge, advisor_responses=advisor_responses
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error processing challenge: {str(e)}"
-        )
+    return {
+        "challenge": request.challenge,
+        "advisor_responses": advisor_responses,
+    }
 
 
 @app.get("/")
