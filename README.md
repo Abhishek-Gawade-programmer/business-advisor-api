@@ -17,7 +17,7 @@ A FastAPI application that simulates a business advisor loop using the crewAI fr
 ## Requirements
 
 - Python 3.12+
-- Dependencies listed in `requirements.txt`
+- Dependencies listed in `pyproject.toml`
 
 ## Installation
 
@@ -29,17 +29,13 @@ A FastAPI application that simulates a business advisor loop using the crewAI fr
    ```
 3. Install dependencies:
    ```
-   pip install -r requirements.txt
+   uv pip install -e .
    ```
 4. Configure your LLM API key:
    - Create a `.env` file in the project root
    - Add your API key (e.g., `OPENAI_API_KEY=your-api-key-here`)
 
 ## Running the Application
-
-```bash
-python main.py
-```
 
 The server will start at http://localhost:8000
 
@@ -120,24 +116,47 @@ The application leverages crewAI's agent-based architecture to create specialize
 The application uses crewAI's process execution capabilities combined with asyncio to handle advisor tasks concurrently:
 
 ```python
-# Run the crew asynchronously
-loop = asyncio.get_event_loop()
-crew_results = await loop.run_in_executor(None, advisor_crew.kickoff)
+async def process_challenge_with_crew(challenge: str) -> List[Dict[str, Any]]:
+    """
+    Process a business challenge through the advisor crew asynchronously.
+
+    Args:
+        challenge: The business challenge text
+
+    Returns:
+        List of dictionaries containing advisor responses and scores
+    """
+    advisor_crew_financial = Crew(
+        agents=[financial_expert],
+        tasks=[financial_task],
+        verbose=True,
+    )
+    advisor_crew_market = Crew(
+        agents=[market_strategist],
+        tasks=[market_task],
+        verbose=True,
+    )
+    advisor_crew_business_model = Crew(
+        agents=[business_model_innovator],
+        tasks=[business_model_task],
+        verbose=True,
+    )
+
+    crew_results_financial = await advisor_crew_financial.kickoff_async()
+    crew_results_market = await advisor_crew_market.kickoff_async()
+    crew_results_business_model = await advisor_crew_business_model.kickoff_async()
+
+    crew_results = [
+        crew_results_financial,
+        crew_results_market,
+        crew_results_business_model,
+    ]
+
+    # Process results to extract scores and format responses
 ```
 
-### Score Extraction
+https://docs.crewai.com/concepts/tasks#using-output-pydantic Pdantic model that the task output should conform to.
 
-The application extracts numerical scores from the advisors' responses using regular expressions:
+sample payload:
 
-```python
-# Look for scores in the format "Capital: 7.5"
-capital_match = re.search(r"Capital:\s*(\d+(\.\d+)?)", text, re.IGNORECASE)
-```
-
-## Future Enhancements
-
-- Implement hierarchical crew processes for more complex analyses
-- Add agent memory for maintaining context across multiple challenges
-- Implement agent delegation for specialized sub-tasks
-- Add a feedback mechanism to improve advisor responses over time
-- Create a web interface for easier interaction with the advisor crew
+https://privatebin.net/?91b534634e81161a#BZWk77N8pvaxMaS5B28hXfvctUgfNhdCbEUhxAJpwptp
